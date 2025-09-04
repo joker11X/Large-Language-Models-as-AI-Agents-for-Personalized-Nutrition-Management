@@ -1,0 +1,8 @@
+[time] 2024-06-05T12:20:00
+[pref] cuisines = Chinese
+[pref] likes = mapo tofu, steamed rice, broccoli
+[habit] lunch_time = 12:00±30m
+[habit] meal_weights = B:0.30, L:0.40, D:0.30
+[habit] typical_portions = protein:~30g/meal, fiber:~8-10g/meal
+[target] today_remaining = Protein:~30g, Fiber:~8g (at 12:20)
+[note] user said: "For next meal, favor Chinese dishes."

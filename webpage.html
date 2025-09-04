@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Nutritional Assistant</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#667eea">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            max-width: 900px; width: 100%; padding: 40px; transition: all .3s ease; min-height: 600px;
+        }
+        .container:hover { transform: translateY(-5px); box-shadow: 0 25px 50px rgba(0,0,0,0.15); }
+        h1{
+            text-align:center;
+            margin-bottom:20px;
+            font-weight:800;
+            
+            font-size: clamp(13px, 3.6vw, 28px);
+            line-height:1.1;
+            white-space: nowrap;
+
+            background: linear-gradient(45deg,#667eea,#764ba2);
+            -webkit-background-clip:text;
+            -webkit-text-fill-color:transparent;
+            background-clip:text;
+            }
+        .nav-tabs { display: flex; justify-content: center; margin-bottom: 30px; background: rgba(255,255,255,0.3); border-radius: 15px; padding: 5px; }
+        .nav-tab { flex: 1; padding: 15px 20px; text-align: center; border: none; background: transparent; color: #666; cursor: pointer; border-radius: 10px; font-size: 16px; font-weight: 500; transition: all .3s ease; }
+        .nav-tab.active { background: linear-gradient(45deg, #667eea, #764ba2); color: #fff; box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+        .nav-tab:hover:not(.active) { background: rgba(102,126,234,0.1); color: #667eea; }
+
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; font-size: 1.1em; }
+        input, select { width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 16px; transition: all .3s ease; background: rgba(255,255,255,0.8); }
+        input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 20px rgba(102,126,234,0.3); transform: translateY(-2px); }
+        .btn { background: linear-gradient(45deg, #667eea, #764ba2); color: #fff; padding: 15px 30px; border: none; border-radius: 10px; font-size: 18px; cursor: pointer; transition: all .3s ease; width: 100%; margin-top: 20px; }
+        .btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(102,126,234,0.4); }
+        .btn:active { transform: translateY(0); }
+
+        .page-content { display: none; min-height: 400px; }
+        .page-content.active { display: block; }
+        .hidden { display: none; }
+
+        .chat-container { height: 450px; display: flex; flex-direction: column; }
+        .messages { flex: 1; overflow-y: auto; border: 2px solid #e0e0e0; border-radius: 10px; padding: 20px; margin-bottom: 20px; background: rgba(255,255,255,0.5); }
+        .message { margin-bottom: 15px; padding: 12px 16px; border-radius: 10px; max-width: 80%; animation: fadeIn .3s ease; }
+        .message img { max-width: 220px; max-height: 220px; border-radius: 10px; margin-top: 8px; border: 2px solid #e0e0e0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+        .user-message { background: linear-gradient(45deg, #667eea, #764ba2); color: #fff; margin-left: auto; }
+        .agent-message { background: #f0f0f0; color: #333; margin-right: auto; }
+
+        .input-area { display: flex; gap: 10px; align-items: end; }
+        .input-controls { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .message-input-row { display: flex; gap: 10px; align-items: center; }
+        .upload-btn { width: 50px; height: 50px; background: linear-gradient(45deg, #ff6b6b, #ee5a52); color: #fff; border: none; border-radius: 10px; cursor: pointer; transition: all .3s ease; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+        .upload-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,107,107,0.4); }
+        #messageInput { flex: 1; margin: 0; }
+        .send-btn { width: auto; padding: 15px 25px; margin: 0; }
+
+        .image-preview { display: none; margin-bottom: 10px; }
+        .image-preview img { max-width: 200px; max-height: 150px; border-radius: 10px; border: 2px solid #e0e0e0; }
+        .remove-image { background: #ff6b6b; color: #fff; border: none; border-radius: 50%; width: 25px; height: 25px; margin-left: 10px; cursor: pointer; }
+
+        .user-info { background: rgba(102,126,234,0.1); padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .user-info h3 { color: #667eea; margin-bottom: 15px; text-align: center; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .info-item { background: rgba(255,255,255,0.7); padding: 15px; border-radius: 8px; border-left: 4px solid #667eea; }
+        .info-item strong { color: #333; display: block; margin-bottom: 5px; }
+
+        .nutrition-plan { background: rgba(76,175,80,0.1); padding: 20px; border-radius: 10px; }
+        .nutrition-plan h3 { color: #4caf50; margin-bottom: 15px; text-align: center; }
+        .plan-status { background: rgba(255,255,255,0.7); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #4caf50; }
+        .nutrition-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+        .nutrition-item { background: rgba(255,255,255,0.7); padding: 10px; border-radius: 8px; text-align: center; }
+        .nutrition-value { font-size: 1.2em; font-weight: bold; color: #4caf50; }
+        .nutrition-label { font-size: 0.9em; color: #666; }
+
+        .loading { text-align: center; color: #667eea; font-style: italic; }
+        .error { background: #ffebee; color: #c62828; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #c62828; }
+        .success { background: #e8f5e8; color: #2e7d2e; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #4caf50; }
+
+        .loading-spinner { border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% { transform: rotate(360deg);} }
+
+        #imageInput { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥗 Intelligent Nutritional Assistant</h1>
+        <button id="pwaInstall" class="btn" style="display:none;margin:6px auto 16px;display:none;">
+            ⬇️ Install App
+          </button>
+
+        <div id="userForm" class="hidden">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #555;">Please fill in your basic information</h2>
+
+            <div class="form-group">
+                <label for="user_name">Username</label>
+                <input type="text" id="user_name" placeholder="Enter your username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="gender">Gender</label>
+                <select id="gender" required>
+                    <option value="">Please select</option>
+                    <option value="男">Male</option>
+                    <option value="女">Female</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="categoryGroup">
+                <label for="category">Special Condition (optional)</label>
+                <select id="category">
+                  <option value="">None</option>
+                  <option value="Infant" data-requires="age_lt_1">Infant (under 1)</option>
+                  <option value="Pregnancy" data-female-only="true">Pregnancy</option>
+                  <option value="Lactation" data-female-only="true">Lactation</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+            <div class="form-group">
+                <label for="age">Age (years)</label>
+                <input type="number" id="age" min="0" max="120" step="0.1" placeholder="e.g., 0.5 for 6 months" required>
+
+            </div>
+
+            <div class="form-group">
+                <label for="height">Height (cm)</label>
+                <input type="number" id="height" min="100" max="250" required>
+            </div>
+
+            <div class="form-group">
+                <label for="weight">Weight (kg)</label>
+                <input type="number" id="weight" min="30" max="300" step="0.1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="activity_level">Activity Level</label>
+                <select id="activity_level" required>
+                    <option value="">Please select</option>
+                    <option value="很少运动">Sedentary (desk job, mostly sitting)</option>
+                    <option value="轻度活动">Lightly active (1–3 days/week)</option>
+                    <option value="中度活动">Moderately active (3–5 days/week)</option>
+                    <option value="重度活动">Very active (6–7 days/week, manual work)</option>
+                </select>
+            </div>
+
+            <button id="saveBtn" type="button" class="btn" onclick="saveUserData(event)">Save and continue</button>
+        </div>
+
+        <div id="mainInterface" class="hidden">
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showPage(event,'chat')">💬 Chat</button>
+                <button class="nav-tab" onclick="showPage(event,'profile')">👤 Profile</button>
+                <button class="nav-tab" onclick="showPage(event,'nutrition')">📊 Nutrition Plan</button>
+            </div>
+
+            <div id="chatPage" class="page-content active">
+                <div class="chat-container">
+                    <div id="messages" class="messages">
+                        <div class="agent-message">
+                           Hi! I’m your personal nutrition assistant. I can provide personalized nutrition advice, meal ideas, and healthy tips. You can type a question or upload a food photo. What would you like help with today?
+                        </div>
+                    </div>
+
+                    <div class="input-area">
+                        <div class="input-controls">
+                            <div id="imagePreview" class="image-preview">
+                                <img id="previewImg" src="" alt="Preview image">
+                                <button class="remove-image" onclick="removeImage()" title="Remove image">×</button>
+                            </div>
+
+                            <div class="message-input-row">
+                                <button class="upload-btn" onclick="document.getElementById('imageInput').click()" title="Upload image">📷</button>
+                                <input type="text" id="messageInput" placeholder="Type your question or upload a food photo..." onkeypress="handleKeyPress(event)">
+                            </div>
+                        </div>
+                        <button class="btn send-btn" onclick="sendMessage()">Send</button>
+                    </div>
+                </div>
+
+                <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">
+            </div>
+
+            <div id="profilePage" class="page-content">
+                <div class="user-info">
+                    <h3>👤 Profile</h3>
+                    <div id="userInfoDisplay" class="info-grid"></div>
+                </div>
+
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn" onclick="editProfile()" style="width: auto; padding: 10px 30px;">📝 Edit Profile</button>
+                </div>
+            </div>
+
+            <div id="nutritionPage" class="page-content">
+                <div class="nutrition-plan">
+                    <h3>📊 Personal Nutrition Plan</h3>
+
+                    <div id="planStatus" class="plan-status"></div>
+                    <div id="nutritionDetails" class="nutrition-details"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="initInterface">
+            <div style="text-align: center; padding: 40px;">
+                <div class="loading-spinner"></div>
+                <p style="color: #667eea; font-size: 1.2em;">Initializing…</p>
+                <p style="color: #888; margin-top: 10px;">Checking user data…</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUserId = null;
+        let isLoading = false;
+        let currentImage = null;
+        let userData = null;
+        let nutritionPlanData = null;
+
+        (function(){ console.log('[boot] inline JS parsed ok'); })();
+        // 1) 注册 Service Worker（localhost 也视作安全环境）
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+            });
+        }
+
+        // 2) “添加到主屏幕”安装按钮（可选）
+        let deferredPrompt = null;
+        const installBtn = document.getElementById('pwaInstall');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installBtn) installBtn.style.display = 'block';
+        });
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            // 安装成功或取消都可以把按钮隐藏
+            installBtn.style.display = 'none';
+            deferredPrompt = null;
+            });
+        }
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('[boot] DOMContentLoaded → checkUserData()');
+                await checkUserData();
+                document.getElementById('age').addEventListener('input', updateCategoryFieldVisibility);
+                document.getElementById('gender').addEventListener('change', updateCategoryFieldVisibility);
+                updateCategoryFieldVisibility();
+            } catch (e) {
+                console.error('[boot] init failed:', e);
+                showError('Initialization failed: ' + (e && e.message ? e.message : e));
+                showUserForm();
+            }
+        });
+
+        function showError(msg) {
+            console.error(msg);
+            const box = document.createElement('div');
+            box.className = 'error';
+            box.textContent = msg;
+            const container = document.querySelector('.container');
+            container.insertBefore(box, container.firstChild);
+        }
+
+        function removeExistingAlerts() {
+            const root = document.querySelector('.container') || document.body;
+            root.querySelectorAll('.error, .success').forEach(el => el.remove());
+        }
+
+        function handleKeyPress(e){ if(e.key==='Enter') sendMessage(); }
+
+        function showPage(pageIdOrEvt, maybePageId) {
+            let evt = null, pageId = null;
+            if (typeof pageIdOrEvt === 'string') pageId = pageIdOrEvt;
+            else { evt = pageIdOrEvt || window.event || null; pageId = maybePageId; }
+
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            const pageEl = document.getElementById(pageId + 'Page');
+            if (pageEl) pageEl.classList.add('active');
+
+            const tabs = document.querySelectorAll('.nav-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            if (evt && evt.target) evt.target.classList.add('active');
+            else {
+                const guess = Array.from(tabs).find(b => (b.getAttribute('onclick')||'').includes(`'${pageId}'`));
+                if (guess) guess.classList.add('active');
+            }
+
+            if (pageId === 'nutrition') {
+                loadNutritionPlan();
+            }
+        }
+        function updateCategoryFieldVisibility() {
+            const ageEl = document.getElementById('age');
+            const genderEl = document.getElementById('gender'); // 仍为“男/女”
+            const group = document.getElementById('categoryGroup');
+            const select = document.getElementById('category');
+            if (!ageEl || !genderEl || !group || !select) return;
+
+            const age = parseFloat(ageEl.value);
+            const gender = genderEl.value; // '男' or '女'
+
+            // 默认：隐藏并清空
+            group.style.display = 'none';
+            [...select.options].forEach(opt => { opt.disabled = false; opt.hidden = false; });
+
+            // <1 岁：仅允许选择（并默认选中）Infant
+            if (!isNaN(age) && age < 1) {
+                group.style.display = '';
+                select.value = 'Infant';
+                // 其他选项隐藏
+                ['Pregnancy','Lactation','Other',''].forEach(v=>{
+                const o = select.querySelector(`option[value="${v}"]`);
+                if (o && v !== 'Infant') { o.hidden = true; }
+                });
+                return;
+            }
+
+            // ≥1 岁：如果为女性，允许 Pregnancy/Lactation；男性隐藏这两项
+            if (gender === '女') {
+                group.style.display = '';
+                const infant = select.querySelector('option[value="Infant"]');
+                if (infant) infant.hidden = true;       // 成人/儿童不显示 Infant
+                if (select.value === 'Infant') select.value = '';
+            } else {
+                const preg = select.querySelector('option[value="Pregnancy"]');
+                const lact = select.querySelector('option[value="Lactation"]');
+                if (preg) { preg.disabled = true; preg.hidden = true; }
+                if (lact) { lact.disabled = true; lact.hidden = true; }
+
+                // 男性且非婴幼儿：整个特殊情况选择通常不需要，隐藏
+                select.value = '';
+                group.style.display = 'none';
+            }
+            }
+
+
+        async function checkUserData() {
+            try {
+                console.log('GET /api/check-user-data');
+                const response = await fetch('/api/check-user-data');
+                console.log('status:', response.status);
+                const data = await response.json();
+                console.log('user-data check:', data);
+
+                if (data.exists && data.user_data) {
+                    console.log('Existing user found → main UI');
+                    currentUserId = data.user_data.user_id;
+                    userData = data.user_data;
+                    showMainInterface(data.user_data);
+                } else {
+                    console.log('No user → show registration');
+                    showUserForm();
+                }
+            } catch (error) {
+                console.error('checkUserData failed:', error);
+                showError('Unable to check user data. Please refresh and try again.');
+                showUserForm();
+            }
+        }
+
+        function showUserForm() {
+            document.getElementById('initInterface').classList.add('hidden');
+            document.getElementById('userForm').classList.remove('hidden');
+            document.getElementById('mainInterface').classList.add('hidden');
+            updateCategoryFieldVisibility();
+        }
+
+        function showMainInterface(userData) {
+            document.getElementById('initInterface').classList.add('hidden');
+            document.getElementById('userForm').classList.add('hidden');
+            document.getElementById('mainInterface').classList.remove('hidden');
+            displayUserInfo(userData);
+        }
+
+        function editProfile() {
+            if (!window.userData) { showError('No profile to edit right now.'); return; }
+            document.getElementById('initInterface').classList.add('hidden');
+            document.getElementById('mainInterface').classList.add('hidden');
+            document.getElementById('userForm').classList.remove('hidden');
+            document.getElementById('user_name').value = userData.user_name || '';
+            document.getElementById('gender').value = userData.gender === 'Male' ? '男' : (userData.gender === 'Female' ? '女' : '');
+            document.getElementById('category').value = userData.category || '';
+            document.getElementById('age').value = userData.age || '';
+            document.getElementById('height').value = userData.height || '';
+            document.getElementById('weight').value = userData.weight || '';
+            document.getElementById('activity_level').value = ({
+                'inactive': '很少运动',
+                'low active': '轻度活动',
+                'active': '中度活动',
+                'very active': '重度活动'
+            })[userData.activity_level] || '';
+            updateCategoryFieldVisibility();
+
+        }
+
+        // Calculate TEE for display only
+        function calculateTEE(userData) {
+            const { gender, age, height, weight, activity_level, category } = userData;
+            let tee = 0;
+
+            const activityMap = {
+                'inactive': 'Inactive', 'low active': 'Low active', 'active': 'Active', 'very active': 'Very active'
+            };
+            const activityType = activityMap[activity_level] || 'Inactive';
+
+            // 优先：孕期公式（仅当选择了 Pregnancy）
+            if (category === 'Pregnancy') {
+                const gestation = 25; // 示例占位
+                switch (activityType) {
+                case 'Inactive':    tee = 1131.20 - (2.04 * age) + (0.34 * height) + (12.15 * weight) + (9.16 * gestation); break;
+                case 'Low active':  tee = 693.35  - (2.04 * age) + (5.73 * height) + (10.20 * weight) + (9.16 * gestation); break;
+                case 'Active':      tee = -223.84 - (2.04 * age) + (13.23 * height)+ (8.15  * weight) + (9.16 * gestation); break;
+                case 'Very active': tee = -779.72 - (2.04 * age) + (18.45 * height)+ (8.73  * weight) + (9.16 * gestation); break;
+                }
+                return Math.round(tee);
+            }
+
+            // 其余：按年龄自动判断儿童/成人
+            if (age <= 2) {
+                if (gender === 'Male' || gender === '男') {
+                tee = -716.45 - (1.00 * age) + (17.82 * height) + (15.06 * weight);
+                } else {
+                tee = -69.15 + (80.0 * age) + (2.65 * height) + (54.15 * weight);
+                }
+            } else if (age >= 3 && age <= 18) {
+                if (gender === 'Male' || gender === '男') {
+                switch (activityType) {
+                    case 'Inactive':    tee = -447.51 + (3.68 * age) + (13.01 * height) + (13.15 * weight); break;
+                    case 'Low active':  tee = 19.12   + (3.68 * age) + (8.62  * height) + (20.28 * weight); break;
+                    case 'Active':      tee = -388.19 + (3.68 * age) + (12.66 * height) + (20.46 * weight); break;
+                    case 'Very active': tee = -671.75 + (3.68 * age) + (15.38 * height) + (23.25 * weight); break;
+                }
+                } else {
+                switch (activityType) {
+                    case 'Inactive':    tee = 55.59   - (22.25 * age) + (8.43  * height) + (17.07 * weight); break;
+                    case 'Low active':  tee = -297.54 - (22.25 * age) + (12.77 * height) + (14.73 * weight); break;
+                    case 'Active':      tee = -189.55 - (22.25 * age) + (11.74 * height) + (18.34 * weight); break;
+                    case 'Very active': tee = -709.59 - (22.25 * age) + (18.22 * height) + (14.25 * weight); break;
+                }
+                }
+            } else {
+                if (gender === 'Male' || gender === '男') {
+                switch (activityType) {
+                    case 'Inactive':    tee = 753.07  - (10.83 * age) + (6.50 * height) + (14.10 * weight); break;
+                    case 'Low active':  tee = 581.47  - (10.83 * age) + (8.30 * height) + (14.94 * weight); break;
+                    case 'Active':      tee = 1004.82 - (10.83 * age) + (6.52 * height) + (15.91 * weight); break;
+                    case 'Very active': tee = -517.88 - (10.83 * age) + (15.61* height) + (19.10 * weight); break;
+                }
+                } else {
+                switch (activityType) {
+                    case 'Inactive':    tee = 584.90  - (7.01 * age) + (5.72 * height) + (11.71 * weight); break;
+                    case 'Low active':  tee = 575.77  - (7.01 * age) + (6.60 * height) + (12.14 * weight); break;
+                    case 'Active':      tee = 710.25  - (7.01 * age) + (6.54 * height) + (12.34 * weight); break;
+                    case 'Very active': tee = 511.83  - (7.01 * age) + (9.07 * height) + (12.56 * weight); break;
+                }
+                }
+            }
+            return Math.round(tee);
+            }
+
+
+        function calculateBMI(weight, height) {
+            const h = height / 100; return (weight / (h*h)).toFixed(1);
+        }
+
+        // <script> 中，替换整个 getFormData()
+        function getFormData() {
+            const nameEl = document.getElementById('user_name');
+            const genderEl = document.getElementById('gender');      // '男' / '女'
+            const categoryEl = document.getElementById('category');  // 'Infant' | 'Pregnancy' | 'Lactation' | 'Other' | ''
+            const ageEl = document.getElementById('age');
+            const heightEl = document.getElementById('height');      // cm
+            const weightEl = document.getElementById('weight');      // kg
+            const actEl = document.getElementById('activity_level'); // 仍为中文值：很少运动/轻度活动/中度活动/重度活动
+
+            const age = parseFloat(ageEl.value);
+            const height = parseFloat(heightEl.value);
+            const weight = parseFloat(weightEl.value);
+
+            const bmi = (Number.isFinite(weight) && Number.isFinite(height) && height > 0)
+                ? calculateBMI(weight, height)
+                : '';
+
+            // 映射性别与活动水平为英文，保持后端兼容
+            const genderRaw = genderEl.value;
+            const gender = (genderRaw === '男') ? 'Male' : (genderRaw === '女' ? 'Female' : genderRaw);
+
+            const convertActivityLevel = (lvl) => ({
+                '很少运动': 'inactive',
+                '轻度活动': 'low active',
+                '中度活动': 'active',
+                '重度活动': 'very active'
+            })[lvl] || lvl;
+
+            // 特殊情况（可为空字符串）
+            const category = categoryEl.value;
+
+            // ← 这里就是你要“追加”的计算：根据年龄推断 life_stage
+            const life_stage = (function (a) {
+                if (!Number.isFinite(a)) return '';
+                if (a < 1)  return 'Infant';
+                if (a < 9)  return 'Child';
+                if (a < 19) return 'Adolescent';
+                if (a < 65) return 'Adult';
+                return 'Older adult';
+            })(age);
+
+            return {
+                user_id: 'user_' + Date.now(),
+                user_name: (nameEl.value || '').trim(),
+                gender,                 // 'Male' | 'Female'
+                category,               // 特殊情况选择
+                life_stage,             // 按年龄自动推断的人群
+                age: Number.isFinite(age) ? age : null,
+                weight: Number.isFinite(weight) ? weight : null,
+                height: Number.isFinite(height) ? height : null,
+                BMI: bmi,
+                activity_level: convertActivityLevel(actEl.value),
+                registration_time: new Date().toLocaleString()
+            };
+        }
+
+
+        function showSuccess(message) {
+            removeExistingAlerts();
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success';
+            successDiv.textContent = message;
+            document.querySelector('.container').insertBefore(successDiv, document.querySelector('.container').firstChild.nextSibling);
+            setTimeout(() => { successDiv.remove(); }, 3000);
+        }
+
+        function validateFormData(data) {
+            const errors = [];
+            if (!data.user_name) errors.push('Please enter a username.');
+            if (!data.gender) errors.push('Please select a gender.');
+            if (!Number.isFinite(data.age) || data.age <= 0) errors.push('Please enter a valid age.');
+            if (!Number.isFinite(data.height) || data.height <= 0) errors.push('Please enter a valid height (cm).');
+            if (!Number.isFinite(data.weight) || data.weight <= 0) errors.push('Please enter a valid weight (kg).');
+            if (!data.activity_level) errors.push('Please select an activity level.');
+            if (errors.length) { showError(errors.join(' ')); return false; }
+            return true;
+        }
+
+        async function saveUserData(evt) {
+            if (isLoading) return;
+            const formData = getFormData();
+            if (!validateFormData(formData)) return;
+
+            isLoading = true;
+            const button = (evt && evt.target) || document.querySelector('#userForm .btn');
+            const originalText = button ? button.textContent : '';
+            if (button) { button.textContent = 'Saving…'; button.disabled = true; }
+
+            try {
+                console.log('POST /api/save-user-data', formData);
+                const response = await fetch('/api/save-user-data', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData)
+                });
+                const result = await response.json();
+                console.log('save-user-data result:', result);
+
+                if (result.success) {
+                    currentUserId = result.user_id;
+                    showSuccess('Profile saved successfully!');
+                    if (result.nutrition_plan_matched) showNutritionPlanStatus(result);
+                    setTimeout(() => { showMainInterface(formData); }, 1500);
+                } else {
+                    showError('Save failed: ' + (result.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('saveUserData failed:', error);
+                showError('Save failed. Please check your network.');
+            } finally {
+                isLoading = false;
+                if (button) { button.textContent = originalText; button.disabled = false; }
+            }
+        }
+
+        function showNutritionPlanStatus(result) {
+            const planStatusDiv = document.getElementById('planStatus');
+            if (!planStatusDiv) return;
+            const matched = result && result.nutrition_plan_matched;
+            const info = result && result.matched_plan_info;
+
+            if (matched) {
+                planStatusDiv.innerHTML = `
+                    <h4>Nutrition Plan Status</h4>
+                    <p>A personalized nutrition plan has been matched for you.</p>
+                    ${info ? `<p>Group: ${info.category} (${info.life_stage})</p>` : ''}
+                    <p>Plan has been written to daily_nutrition_plan.csv</p>`;
+            } else {
+                planStatusDiv.innerHTML = `
+                    <h4>Nutrition Plan Status</h4>
+                    <p>No plan matched yet. Please check if your profile is complete.</p>`;
+            }
+        }
+
+        function displayUserInfo(userData) {
+            const userInfoDiv = document.getElementById('userInfoDisplay');
+            const bmi = userData.BMI || calculateBMI(userData.weight, userData.height);
+            const tee = calculateTEE(userData);
+            const lifeStage = (function (a) {
+                a = parseFloat(a);
+                if (!Number.isFinite(a)) return '-';
+                if (a < 1)  return 'Infant';
+                if (a < 9)  return 'Child';
+                if (a < 19) return 'Adolescent';
+                if (a < 65) return 'Adult';
+                return 'Older adult';
+            })(userData.age);
+
+            const displayActivityLevel = (level) => ({
+                'inactive': 'Inactive', 'low active': 'Low active', 'active': 'Active', 'very active': 'Very active'
+            })[level] || level;
+
+            userInfoDiv.innerHTML = `
+                <div class="info-item"><strong>Username</strong>${userData.user_name}</div>
+                <div class="info-item"><strong>Gender</strong>${userData.gender}</div>
+                <div class="info-item"><strong>Age</strong>${userData.age} years</div>
+                <div class="info-item"><strong>Height</strong>${userData.height} cm</div>
+                <div class="info-item"><strong>Weight</strong>${userData.weight} kg</div>
+                <div class="info-item"><strong>BMI</strong>${bmi}</div>
+                <div class="info-item"><strong>Special Condition</strong>${userData.category || 'None'}</div>
+                <div class="info-item"><strong>Life Stage</strong>${lifeStage}</div>
+                <div class="info-item"><strong>Activity Level</strong>${displayActivityLevel(userData.activity_level)}</div>
+                <div class="info-item"><strong>Registered at</strong>${userData.registration_time || 'Unknown'}</div>`;
+        }
+
+        // --- Nutrition plan (RDI) ---
+        let rdiGroupIndex = 0;               // 0: macronutrients, 1: vitamins, 2: minerals
+        let rdiGroupsOrder = ['macronutrients','vitamins','minerals'];
+        let rdiDataCache = null;
+
+        async function loadNutritionPlan(){
+            const planStatusDiv = document.getElementById('planStatus');
+            const detailDiv = document.getElementById('nutritionDetails');
+            planStatusDiv.innerHTML = '<p class="rdi-muted">Loading your nutrition plan…</p>';
+            detailDiv.innerHTML = '';
+
+            try{
+                const qs = currentUserId ? ('?user_id=' + encodeURIComponent(currentUserId)) : '';
+                const res = await fetch('/api/nutrition-plan'+qs);
+                const json = await res.json();
+
+                if(!json.success){
+                    planStatusDiv.innerHTML = '<p class="rdi-muted">No plan found. Please save your profile first.</p>';
+                    return;
+                }
+
+                rdiDataCache = json.data;
+                planStatusDiv.innerHTML = `
+                    <h4>Nutrition Plan Status</h4>
+                    <p>Personalized plan matched; EER: <strong>${rdiDataCache.eer || '-'}</strong> kcal/day</p>
+                    <p class="rdi-muted">Date: ${rdiDataCache.date || '-'}</p>`;
+
+                rdiGroupIndex = 0;
+                renderRdiTable();
+            }catch(err){
+                console.error(err);
+                planStatusDiv.innerHTML = '<p class="rdi-muted">Failed to load. Please try again.</p>';
+            }
+        }
+
+        function renderRdiTable(){
+            if(!rdiDataCache) return;
+            const container = document.getElementById('nutritionDetails');
+            const key = rdiGroupsOrder[rdiGroupIndex];
+            const groupsTitle = {
+                macronutrients:'Daily Recommended Macronutrient Intake',
+                vitamins:'Daily Recommended Vitamin Intake',
+                minerals:'Daily Recommended Essential Mineral Intake'
+            };
+            const rows = (rdiDataCache.groups[key] || []).map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.value}${item.unit ? ' ' + item.unit : ''}</td>
+                </tr>`).join('') || `<tr><td colspan="2" class="rdi-muted">No data</td></tr>`;
+
+            container.innerHTML = `
+                <div class="rdi-wrap" style="margin-top:16px;">
+                    <div class="rdi-header" style="display:flex;justify-content:space-between;align-items:center;margin:10px 0;">
+                        <div class="rdi-title" style="font-size:18px;font-weight:700;color:#333;">${groupsTitle[key]}</div>
+                        <div class="rdi-nav">
+                            <button onclick="prevRdi()" style="border:none;background:#eee;padding:8px 12px;border-radius:8px;cursor:pointer;margin:0 4px;">← Prev</button>
+                            <button onclick="nextRdi()" style="border:none;background:#eee;padding:8px 12px;border-radius:8px;cursor:pointer;margin:0 4px;">Next →</button>
+                        </div>
+                    </div>
+                    <table class="rdi-table" style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;">
+                        <thead><tr><th style="padding:12px 16px;border-bottom:1px solid #f0f0f0;text-align:left;background:#f9fafc;color:#555;">Nutrient</th><th style="padding:12px 16px;border-bottom:1px solid #f0f0f0;text-align:left;background:#f9fafc;color:#555;">Recommended Intake Per Day</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>`;
+        }
+        function prevRdi(){ rdiGroupIndex = (rdiGroupIndex + rdiGroupsOrder.length - 1) % rdiGroupsOrder.length; renderRdiTable(); }
+        function nextRdi(){ rdiGroupIndex = (rdiGroupIndex + 1) % rdiGroupsOrder.length; renderRdiTable(); }
+
+        // --- Chat ---
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) { showError('Please select a valid image file.'); return; }
+            if (file.size > 5 * 1024 * 1024) { showError('Image file must be ≤ 5MB.'); return; }
+            currentImage = file;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            currentImage = null;
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imageInput').value = '';
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message && !currentImage) return;
+            if (isLoading) return;
+
+            // —— 把当前选择的图片“快照”下来，避免后面清空预览后丢失文件 —— 
+            const imageFile = currentImage || null;
+            const previewURL =
+                imageFile
+                ? (document.getElementById('previewImg')?.src || URL.createObjectURL(imageFile))
+                : null;
+
+            // 发送前先把“用户侧气泡”插入，包括图片
+            let displayMessage = message;
+            if (imageFile && message) displayMessage = '[Image] ' + message;
+            else if (imageFile && !message) displayMessage = '[Image] Please analyze this food photo.';
+            addMessage(displayMessage, 'user', { imageUrl: previewURL });
+            input.value = '';
+
+            isLoading = true;
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message agent-message loading';
+            loadingDiv.innerHTML = '<div class="loading-spinner"></div>Assistant is thinking…';
+            document.getElementById('messages').appendChild(loadingDiv);
+            scrollToBottom();
+
+            try {
+                const formData = new FormData();
+                formData.append('message', message);
+                formData.append('user_id', currentUserId || 'anonymous');
+                if (imageFile) formData.append('image', imageFile);
+
+                // 关键：既然已经把文件塞进 formData，也把气泡插入了，
+                // 现在就清空“待发送区”的预览，避免一直停在那里。
+                if (currentImage) removeImage();
+
+                let agentText = '';
+
+                if (imageFile) {
+                // 带图：走 Controller 的 meal 接口（multipart）
+                const r = await fetch('/api/controller/meal', { method: 'POST', body: formData });
+                const j = await r.json();
+
+                if (j.ok) {
+                    agentText =
+                    (j.data && (j.data.dialog_reply || j.data.reply)) ||
+                    (j.data && j.data.file_result && j.data.file_result.preview && j.data.file_result.preview.message) ||
+                    'Meal logged.';
+                } else {
+                    agentText = j.error || 'Failed to analyze the image.';
+                }
+                } else {
+                // 纯文本：走 Controller 的 ask 接口（JSON）
+                // 纯文本：/api/controller/ask
+                const r = await fetch('/api/controller/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, user_id: currentUserId || 'anonymous' })
+                });
+
+                agentText = '';
+                const ct = (r.headers.get('content-type') || '').toLowerCase();
+                if (ct.includes('application/json')) {
+                    const j = await r.json();
+                    agentText = j?.data?.reply ?? j?.data ?? j?.reply ?? j?.error ?? 'No reply';
+                } else {
+                    const t = await r.text();
+                    try { const j = JSON.parse(t); agentText = j?.data?.reply ?? j?.data ?? t; }
+                    catch { agentText = t || 'No reply'; }
+                }
+                }
+
+                loadingDiv.remove();
+                addMessage(String(agentText), 'agent');
+
+            } catch (error) {
+                loadingDiv.remove();
+                addMessage('Network error. Please check your connection.', 'agent');
+                console.error('sendMessage failed:', error);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+
+        function addMessage(message, type, options = {}) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+
+            if (message) {
+                const textEl = document.createElement('div');
+                textEl.textContent = message;
+                messageDiv.appendChild(textEl);
+            }
+
+            if (options.imageUrl) {
+                const img = document.createElement('img');
+                img.src = options.imageUrl;      // DataURL 或 objectURL
+                img.alt = 'uploaded image';
+                img.loading = 'lazy';
+                messageDiv.appendChild(img);
+            }
+
+            messagesDiv.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+
+
+
+        function scrollToBottom() {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // (Optional) Controller endpoints (kept for compatibility)
+        async function sendChat() {
+            const message = document.getElementById('chatInput')?.value?.trim() || '';
+            const userId = window.currentUserId || 'default';
+            const r = await fetch('/api/controller/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message, user_id:userId}) });
+            const j = await r.json();
+            showChatReply && showChatReply(j.data?.reply || 'No reply');
+        }
+        async function uploadMeal() {
+            const file = document.getElementById('mealImage')?.files?.[0];
+            const msg  = document.getElementById('imgMsg')?.value || '';
+            const userId = window.currentUserId || 'default';
+            if (!file) { showError('Please choose an image first.'); return; }
+            const fd = new FormData();
+            fd.append('image', file); fd.append('message', msg); fd.append('user_id', userId);
+            const r = await fetch('/api/controller/meal', { method:'POST', body: fd });
+            const j = await r.json();
+            showChatReply && showChatReply(j.data?.reply || 'No reply');
+        }
+    </script>
+</body>
+</html>
